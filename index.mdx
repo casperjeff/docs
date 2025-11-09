@@ -1,6 +1,7 @@
 ---
 title: "Welcome to Streamline"
 description: "The modern payments API designed for seamless integration"
+mode: "wide"
 ---
 
 ## Payments Integration, Simplified
@@ -8,32 +9,16 @@ description: "The modern payments API designed for seamless integration"
 **Streamline**, powered by [iStream Financial](https://istreamfinancial.com), is an ultra-modern payments API designed to make integration with ISVs, gateways, and partners effortless. Get world-class features, complete lifecycle observability, and unmatched developer experience—all in one platform.
 
 <CardGroup cols={2}>
-  <Card
-    title="Quick Start"
-    icon="rocket"
-    href="/guides/getting-started"
-  >
+  <Card title="Quick Start" icon="rocket" href="/guides/getting-started">
     Get your first payment processing in under 10 minutes
   </Card>
-  <Card
-    title="API Reference"
-    icon="code"
-    href="/api-reference/introduction"
-  >
+  <Card title="API Reference" icon="code" href="/api-reference/introduction">
     Explore our comprehensive API documentation
   </Card>
-  <Card
-    title="ACH Concepts"
-    icon="university"
-    href="/guides/ach-concepts"
-  >
+  <Card title="ACH Concepts" icon="university" href="/guides/ach-concepts">
     Master ACH payments with our in-depth guide
   </Card>
-  <Card
-    title="Sandbox Testing"
-    icon="flask"
-    href="/guides/testing-development"
-  >
+  <Card title="Sandbox Testing" icon="flask" href="/guides/testing-development">
     Test everything in our full-featured sandbox
   </Card>
 </CardGroup>
@@ -51,8 +36,7 @@ description: "The modern payments API designed for seamless integration"
     - **Webhooks** for real-time event notifications
     - **SDKs** coming soon for popular languages
   </Accordion>
-
-  <Accordion title="Multiple Payment Rails, One API" icon="railroad">
+  <Accordion title="Multiple Payment Rails, One API" icon="train">
     Support ACH, Same-Day ACH, and Real-Time Payments (RTP) through a unified interface.
 
     - **Standard ACH** - Cost-effective 1-2 day settlement
@@ -60,7 +44,6 @@ description: "The modern payments API designed for seamless integration"
     - **RTP** - Instant, 24/7/365 real-time payments
     - **Automatic Rail Selection** - Let Streamline choose the optimal rail
   </Accordion>
-
   <Accordion title="Smart Features That Just Work" icon="wand-magic-sparkles">
     Sophisticated capabilities that feel simple to use.
 
@@ -69,7 +52,6 @@ description: "The modern payments API designed for seamless integration"
     - **Smart Retries** - Bank-grade calendars and funds availability heuristics
     - **Idempotency** - Built-in protection against duplicate charges
   </Accordion>
-
   <Accordion title="Complete Lifecycle Observability" icon="chart-line">
     See exactly what's happening with every payment, every step of the way.
 
@@ -78,7 +60,6 @@ description: "The modern payments API designed for seamless integration"
     - **Settlement Tracking** with detailed breakdowns
     - **Performance Metrics** and analytics
   </Accordion>
-
   <Accordion title="Account Validation Made Easy" icon="circle-check">
     Multiple validation methods to ensure account accuracy before processing.
 
@@ -87,7 +68,6 @@ description: "The modern payments API designed for seamless integration"
     - **Instant Verification** - Real-time 3rd party account lookup
     - **Automatic NOC Handling** - Updates accounts with bank corrections
   </Accordion>
-
   <Accordion title="Enterprise-Grade Security" icon="shield-halved">
     Bank-level security and compliance built into every layer.
 
@@ -109,115 +89,120 @@ description: "The modern payments API designed for seamless integration"
 
     [Sign Up Now →](https://dashboard.streamline.example.com/signup)
   </Step>
-
   <Step title="Get Your API Keys">
     Generate your API credentials from the dashboard—separate keys for sandbox and production.
-```bash
-    # Your API credentials
-    Sandbox: sk_sandbox_...
-    Production: sk_live_...
-```
-  </Step>
 
+    ```bash
+        # Your API credentials
+        Sandbox: sk_sandbox_...
+        Production: sk_live_...
+    ```
+  </Step>
   <Step title="Make Your First Request">
     Create a stored account and process your first payment.
 
     <CodeGroup>
-```bash cURL
-    curl https://sandbox.api.streamline.example.com/v3/stored-accounts \
-      -H "Authorization: Bearer sk_sandbox_..." \
-      -H "Idempotency-Key: $(uuidgen)" \
-      -H "Content-Type: application/json" \
-      -d '{
-        "type": "ach",
-        "location_id": "loc_123",
-        "account_number": "123456789",
-        "routing_number": "021000021",
-        "account_type": "checking",
-        "account_holder_name": "Jane Doe"
-      }'
-```
-```python Python
-    import requests
-    import uuid
 
-    response = requests.post(
-        'https://sandbox.api.streamline.example.com/v3/stored-accounts',
-        headers={
-            'Authorization': 'Bearer sk_sandbox_...',
-            'Idempotency-Key': str(uuid.uuid4()),
-            'Content-Type': 'application/json'
-        },
-        json={
-            'type': 'ach',
-            'location_id': 'loc_123',
-            'account_number': '123456789',
-            'routing_number': '021000021',
-            'account_type': 'checking',
-            'account_holder_name': 'Jane Doe'
-        }
-    )
+    ```bash cURL
+        curl https://sandbox.api.streamline.example.com/v3/stored-accounts \
+          -H "Authorization: Bearer sk_sandbox_..." \
+          -H "Idempotency-Key: $(uuidgen)" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "type": "ach",
+            "location_id": "loc_123",
+            "account_number": "123456789",
+            "routing_number": "021000021",
+            "account_type": "checking",
+            "account_holder_name": "Jane Doe"
+          }'
+    ```
 
-    account = response.json()
-    print(f"Account created: {account['id']}")
-```
-```javascript Node.js
-    const axios = require('axios');
-    const { v4: uuidv4 } = require('uuid');
+    
+    ```python Python
+        import requests
+        import uuid
+    
+        response = requests.post(
+            'https://sandbox.api.streamline.example.com/v3/stored-accounts',
+            headers={
+                'Authorization': 'Bearer sk_sandbox_...',
+                'Idempotency-Key': str(uuid.uuid4()),
+                'Content-Type': 'application/json'
+            },
+            json={
+                'type': 'ach',
+                'location_id': 'loc_123',
+                'account_number': '123456789',
+                'routing_number': '021000021',
+                'account_type': 'checking',
+                'account_holder_name': 'Jane Doe'
+            }
+        )
+    
+        account = response.json()
+        print(f"Account created: {account['id']}")
+    ```
 
-    const response = await axios.post(
-      'https://sandbox.api.streamline.example.com/v3/stored-accounts',
-      {
-        type: 'ach',
-        location_id: 'loc_123',
-        account_number: '123456789',
-        routing_number: '021000021',
-        account_type: 'checking',
-        account_holder_name: 'Jane Doe'
-      },
-      {
-        headers: {
-          'Authorization': 'Bearer sk_sandbox_...',
-          'Idempotency-Key': uuidv4(),
-          'Content-Type': 'application/json'
-        }
-      }
-    );
+    
+    ```javascript Node.js
+        const axios = require('axios');
+        const { v4: uuidv4 } = require('uuid');
+    
+        const response = await axios.post(
+          'https://sandbox.api.streamline.example.com/v3/stored-accounts',
+          {
+            type: 'ach',
+            location_id: 'loc_123',
+            account_number: '123456789',
+            routing_number: '021000021',
+            account_type: 'checking',
+            account_holder_name: 'Jane Doe'
+          },
+          {
+            headers: {
+              'Authorization': 'Bearer sk_sandbox_...',
+              'Idempotency-Key': uuidv4(),
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+    
+        console.log('Account created:', response.data.id);
+    ```
 
-    console.log('Account created:', response.data.id);
-```
     </CodeGroup>
   </Step>
-
   <Step title="Process a Payment">
     Create a payment against your stored account.
-```bash
-    curl https://sandbox.api.streamline.example.com/v3/payments \
-      -H "Authorization: Bearer sk_sandbox_..." \
-      -H "Idempotency-Key: $(uuidgen)" \
-      -H "Content-Type: application/json" \
-      -d '{
-        "location_id": "loc_123",
-        "payment_method": "ach",
-        "stored_account_id": "acct_...",
-        "amount": 100.00,
-        "direction": "debit",
-        "description": "Test payment"
-      }'
-```
-  </Step>
 
+    ```bash
+        curl https://sandbox.api.streamline.example.com/v3/payments \
+          -H "Authorization: Bearer sk_sandbox_..." \
+          -H "Idempotency-Key: $(uuidgen)" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "location_id": "loc_123",
+            "payment_method": "ach",
+            "stored_account_id": "acct_...",
+            "amount": 100.00,
+            "direction": "debit",
+            "description": "Test payment"
+          }'
+    ```
+  </Step>
   <Step title="Set Up Webhooks">
     Get real-time notifications about payment events.
-```bash
-    curl https://sandbox.api.streamline.example.com/v3/webhook-endpoints \
-      -H "Authorization: Bearer sk_sandbox_..." \
-      -H "Content-Type: application/json" \
-      -d '{
-        "url": "https://your-app.com/webhooks",
-        "events": ["payment.created", "payment.settled", "payment.failed"]
-      }'
-```
+
+    ```bash
+        curl https://sandbox.api.streamline.example.com/v3/webhook-endpoints \
+          -H "Authorization: Bearer sk_sandbox_..." \
+          -H "Content-Type: application/json" \
+          -d '{
+            "url": "https://your-app.com/webhooks",
+            "events": ["payment.created", "payment.settled", "payment.failed"]
+          }'
+    ```
   </Step>
 </Steps>
 
@@ -229,35 +214,27 @@ description: "The modern payments API designed for seamless integration"
   <Card title="Settlement Control" icon="split">
     Split payments with flat amounts, percentages, and remainder logic
   </Card>
-
   <Card title="Instant Availability" icon="bolt">
     Optional instant funds availability evaluation
   </Card>
-
   <Card title="Auto Rail Selection" icon="route">
     Let the platform choose the best payment rail
   </Card>
-
   <Card title="Smart Retries" icon="rotate">
     Bank-grade calendars and retry logic
   </Card>
-
   <Card title="ACH Return Simulator" icon="flask-vial">
     Test every return code in sandbox
   </Card>
-
   <Card title="Comprehensive Webhooks" icon="webhook">
     Real-time events with replay protection
   </Card>
-
   <Card title="Idempotency Keys" icon="fingerprint">
     Built-in duplicate prevention
   </Card>
-
   <Card title="Rate Limiting" icon="gauge-high">
     Standard headers with adaptive throttling
   </Card>
-
   <Card title="Audit Logs" icon="file-lines">
     Complete activity history for compliance
   </Card>
@@ -273,37 +250,56 @@ description: "The modern payments API designed for seamless integration"
 
     Build payment capabilities directly into your SaaS platform.
 
-    <Check>Multi-tenant architecture support</Check>
-    <Check>White-label ready</Check>
-    <Check>Flexible settlement for marketplace scenarios</Check>
-    <Check>Comprehensive webhooks for customer notifications</Check>
-
+    <Check>
+      Multi-tenant architecture support
+    </Check>
+    <Check>
+      White-label ready
+    </Check>
+    <Check>
+      Flexible settlement for marketplace scenarios
+    </Check>
+    <Check>
+      Comprehensive webhooks for customer notifications
+    </Check>
     [Read ISV Integration Guide →](/guides/integration-guides#isv-integration-guide)
   </Tab>
-
   <Tab title="Payment Gateways">
     ### Payment Gateway Providers
 
     Expand your payment rails offering with minimal integration effort.
 
-    <Check>Pass-through and aggregation patterns</Check>
-    <Check>Automatic rail selection and routing</Check>
-    <Check>Settlement orchestration for complex fee structures</Check>
-    <Check>Real-time status updates via webhooks</Check>
-
+    <Check>
+      Pass-through and aggregation patterns
+    </Check>
+    <Check>
+      Automatic rail selection and routing
+    </Check>
+    <Check>
+      Settlement orchestration for complex fee structures
+    </Check>
+    <Check>
+      Real-time status updates via webhooks
+    </Check>
     [Read Gateway Integration Guide →](/guides/integration-guides#gateway-integration)
   </Tab>
-
   <Tab title="Partners">
     ### Integration Partners
 
     Connect your platform to modern ACH and RTP capabilities.
 
-    <Check>RESTful API with OpenAPI spec</Check>
-    <Check>Comprehensive testing environment</Check>
-    <Check>Multiple authentication options</Check>
-    <Check>Complete lifecycle observability</Check>
-
+    <Check>
+      RESTful API with OpenAPI spec
+    </Check>
+    <Check>
+      Comprehensive testing environment
+    </Check>
+    <Check>
+      Multiple authentication options
+    </Check>
+    <Check>
+      Complete lifecycle observability
+    </Check>
     [Read Integration Patterns →](/guides/integration-guides)
   </Tab>
 </Tabs>
@@ -316,31 +312,24 @@ description: "The modern payments API designed for seamless integration"
   <Card title="Core Concepts" icon="lightbulb" href="/guides/core-concepts">
     Understand payment rails, lifecycle, settlement, and validation
   </Card>
-
   <Card title="ACH Deep Dive" icon="book-open" href="/guides/ach-concepts">
     Master SEC codes, returns, reversals, and NACHA compliance
   </Card>
-
   <Card title="Authentication & Security" icon="lock" href="/guides/authentication-security">
     OAuth2, API keys, encryption, and compliance
   </Card>
-
   <Card title="Testing Guide" icon="vial" href="/guides/testing-development">
     Sandbox, simulators, and test scenarios
   </Card>
-
   <Card title="Payment Operations" icon="money-bill-transfer" href="/guides/payment-operations">
     Creating, tracking, retrying, and reconciling payments
   </Card>
-
   <Card title="Webhooks" icon="bell" href="/guides/webhooks">
     Real-time events, signatures, and replay protection
   </Card>
-
   <Card title="Error Handling" icon="triangle-exclamation" href="/guides/error-handling">
     Error codes, rate limiting, and reliability patterns
   </Card>
-
   <Card title="Support Resources" icon="life-ring" href="/guides/support-resources">
     FAQ, glossary, examples, and community
   </Card>
@@ -353,10 +342,11 @@ description: "The modern payments API designed for seamless integration"
 Test everything before going live with our full-featured sandbox.
 
 <Note>
-The sandbox environment mirrors production with accelerated processing times and comprehensive test scenarios.
+  The sandbox environment mirrors production with accelerated processing times and comprehensive test scenarios.
 </Note>
 
 **Sandbox Features:**
+
 - ✅ Full API access with all endpoints
 - ✅ ACH return code simulator (test all R-codes)
 - ✅ Accelerated microdeposit and prenote processing
@@ -371,35 +361,16 @@ The sandbox environment mirrors production with accelerated processing times and
 ## Ready to Build?
 
 <CardGroup cols={2}>
-  <Card
-    title="Start Building"
-    icon="code"
-    href="/guides/getting-started"
-  >
+  <Card title="Start Building" icon="code" href="/guides/getting-started">
     Follow our quick start guide and process your first payment
   </Card>
-
-  <Card
-    title="View API Reference"
-    icon="book"
-    href="/api-reference/introduction"
-  >
+  <Card title="View API Reference" icon="book" href="/api-reference/introduction">
     Explore all endpoints with interactive examples
   </Card>
-
-  <Card
-    title="Get API Keys"
-    icon="key"
-    href="https://dashboard.streamline.example.com"
-  >
+  <Card title="Get API Keys" icon="key" href="https://dashboard.streamline.example.com">
     Sign up and get instant access to sandbox credentials
   </Card>
-
-  <Card
-    title="Contact Sales"
-    icon="comments"
-    href="mailto:sales@istreamfinancial.com"
-  >
+  <Card title="Contact Sales" icon="comments" href="mailto:sales@istreamfinancial.com">
     Talk to our team about your integration needs
   </Card>
 </CardGroup>
@@ -414,11 +385,9 @@ Get help, share knowledge, and stay updated.
   <Card title="Developer Community" icon="users" href="https://community.streamline.example.com">
     Connect with other developers
   </Card>
-
   <Card title="Status Page" icon="signal" href="https://status.streamline.example.com">
     Monitor API uptime and incidents
   </Card>
-
   <Card title="Support" icon="headset" href="mailto:support@istreamfinancial.com">
     Get help from our team
   </Card>
@@ -427,5 +396,5 @@ Get help, share knowledge, and stay updated.
 ---
 
 <Note>
-**Powered by iStream Financial** - A trusted leader in payment processing infrastructure with decades of expertise in ACH, RTP, and modern payment rails.
+  **Powered by iStream Financial** - A trusted leader in payment processing infrastructure with decades of expertise in ACH, RTP, and modern payment rails.
 </Note>
