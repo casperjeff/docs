@@ -1,0 +1,1657 @@
+openapi: 3.0.3
+info:
+  title: Payments API
+  version: 3.4.0
+  description: |
+    Partner payments API.
+
+    Partners can:
+    1. create stored accounts (ACH or RTP) tied to a location, OR
+    2. skip that and submit a one-time ACH payment (onetime_ach)
+    3. create payments against an existing stored account
+    4. control settlement with optional, ordered settlement_instructions
+    5. optionally request availability (instant_if_approved) that is evaluated in the context of settlement
+    6. optionally let the platform choose the best rail (payment_method=auto) using rail_policy
+    7. perform rail-specific lifecycle actions via a unified actions endpoint
+
+    settlement is still performed by the platform outside of this api.
+
+servers:
+  - url: https://api.example.com/v3
+    description: production
+  - url: https://sandbox.api.example.com/v3
+    description: sandbox
+
+security:
+  - BearerAuth: [ ]
+
+tags:
+  - name: core payments
+    description: create and fetch payments and stored accounts
+  - name: actions
+    description: enqueue and track actions against payments
+  - name: recurring
+    description: customers and recurring schedules
+  - name: exports & jobs
+    description: asynchronous exports and job status
+  - name: webhooks
+    description: manage webhook endpoints, secrets, and delivery history
+
+x-tagGroups:
+  - name: core
+    tags: [core payments]
+  - name: lifecycles
+    tags: [actions, recurring]
+  - name: data ops
+    tags: [exports & jobs]
+  - name: integrations
+    tags: [webhooks]
+
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      description: unique key to guarantee idempotent processing of this request
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    CreatedAfter:
+      name: created_after
+      in: query
+      description: return items created after this timestamp
+      required: false
+      schema:
+        type: string
+        format: date-time
+
+    CreatedBefore:
+      name: created_before
+      in: query
+      description: return items created before this timestamp
+      required: false
+      schema:
+        type: string
+        format: date-time
+
+    Status:
+      name: status
+      in: query
+      description: filter by status
+      required: false
+      schema:
+        type: string
+
+  schemas:
+    WebhookEvent:
+      type: object
+      required:
+        - id
+        - type
+        - data
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum:
+            - payment.created
+            - payment.updated
+            - payment.settled
+            - payment.failed
+            - payment.returned
+            - stored_account.created
+            - stored_account.updated
+            - stored_account.verified
+            - stored_account.failed
+        data:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+
+    WebhookSignature:
+      type: object
+      required:
+        - timestamp
+        - signatures
+      properties:
+        timestamp:
+          type: string
+          description: unix timestamp of when webhook was sent
+        signatures:
+          type: array
+          description: HMAC-SHA256 signatures over "timestamp.raw_body" (multiple for key rotation)
+          items:
+            type: string
+        tolerance_seconds:
+          type: integer
+          description: webhook is valid only if timestamp is within this many seconds of receipt
+
+    WebhookEndpoint:
+      type: object
+      required:
+        - id
+        - endpoint_url
+        - enabled_events
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        endpoint_url:
+          type: string
+          format: uri
+        signing_secrets:
+          type: array
+          description: multiple secrets supported for rotation
+          items:
+            type: string
+        enabled_events:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+
+    ExportFormat:
+      type: string
+      enum: [ csv, ndjson ]
+      description: 'file format of the exported snapshot'
+
+    ExportCompression:
+      type: string
+      enum: [ none, gzip ]
+      default: gzip
+      description: 'server may ignore none and always gzip for large exports'
+
+    Checksum:
+      type: object
+      properties:
+        algorithm:
+          type: string
+          enum: [ md5, sha256 ]
+        value:
+          type: string
+          description: 'hex-encoded checksum for the exported file'
+
+    ExportResult:
+      type: object
+      description: 'details for a completed export; included in action.result.export'
+      properties:
+        download_url:
+          type: string
+          description: 'pre-signed url to download the exported file; short-lived'
+        manifest_url:
+          type: string
+          description: 'optional pre-signed url to a json manifest describing the export'
+        expires_at:
+          type: string
+          format: date-time
+        format:
+          $ref: '#/components/schemas/ExportFormat'
+        compression:
+          $ref: '#/components/schemas/ExportCompression'
+        content_type:
+          type: string
+          example: 'application/x-ndjson'
+        approximate_row_count:
+          type: integer
+          description: 'row count if known; may be approximate for very large exports'
+        checksum:
+          $ref: '#/components/schemas/Checksum'
+
+    PaymentsExportRequest:
+      type: object
+      required: [ format ]
+      properties:
+        format:
+          $ref: '#/components/schemas/ExportFormat'
+        compression:
+          $ref: '#/components/schemas/ExportCompression'
+        created_after:
+          type: string
+          format: date-time
+        created_before:
+          type: string
+          format: date-time
+        status:
+          type: string
+        location_id:
+          type: string
+        stored_account_id:
+          type: string
+        customer_id:
+          type: string
+        recurring_schedule_id:
+          type: string
+        payment_method:
+          type: string
+          enum: [ ach, rtp, sameday_ach, auto ]
+        actual_payment_method:
+          type: string
+          enum: [ ach, rtp, sameday_ach ]
+        direction:
+          type: string
+          enum: [ debit, credit ]
+        fields:
+          type: array
+          description: 'optional whitelist of payment fields to include'
+          items:
+            type: string
+        timezone:
+          type: string
+          description: 'iana tz name used to interpret date filters (defaults to account timezone)'
+
+    StoredAccountsExportRequest:
+      type: object
+      required: [ format ]
+      properties:
+        format:
+          $ref: '#/components/schemas/ExportFormat'
+        compression:
+          $ref: '#/components/schemas/ExportCompression'
+        created_after:
+          type: string
+          format: date-time
+        created_before:
+          type: string
+          format: date-time
+        location_id:
+          type: string
+        type:
+          type: string
+          enum: [ ach, rtp ]
+        status:
+          type: string
+          enum: [ active, inactive ]
+        fingerprint:
+          type: string
+        fields:
+          type: array
+          description: 'optional whitelist of stored account fields to include'
+          items:
+            type: string
+        timezone:
+          type: string
+          description: 'iana tz name used to interpret date filters (defaults to account timezone)'
+
+
+    MetadataItem:
+      type: object
+      required: [ key, value ]
+      properties:
+        key:
+          type: string
+          maxLength: 100
+        value:
+          type: string
+          maxLength: 500
+    Customer:
+      type: object
+      required: [ id, location_id, created_at, updated_at ]
+      properties:
+        id:
+          type: string
+          format: uuid
+        location_id:
+          type: string
+        name:
+          type: string
+          maxLength: 120
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        billing_address:
+          type: object
+          properties:
+            line1: { type: string }
+            line2: { type: string }
+            city: { type: string }
+            region: { type: string }
+            postal_code: { type: string }
+            country: { type: string, maxLength: 2, description: iso-3166-1 alpha-2 }
+        default_stored_account_id:
+          type: string
+          description: optional convenience pointer for new payments/schedules
+        metadata:
+          type: array
+          items: { $ref: '#/components/schemas/MetadataItem' }
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateCustomerRequest:
+      type: object
+      required: [ location_id, name ]
+      properties:
+        location_id: { type: string }
+        name: { type: string, maxLength: 120 }
+        email: { type: string, format: email }
+        phone: { type: string }
+        billing_address:
+          $ref: '#/components/schemas/Customer/properties/billing_address'
+        default_stored_account_id: { type: string }
+        metadata:
+          type: array
+          items: { $ref: '#/components/schemas/MetadataItem' }
+
+    ScheduleCadence:
+      type: object
+      description: cadence definition using an interval + anchors
+      properties:
+        frequency:
+          type: string
+          enum: [ daily, weekly, monthly, yearly, custom_cron ]
+          default: monthly
+        interval:
+          type: integer
+          minimum: 1
+          default: 1
+          description: number of frequency units between charges (e.g., every 2 weeks)
+        day_of_month:
+          type: integer
+          minimum: 1
+          maximum: 31
+          description: used for monthly/yearly when applicable; if > last day, roll to last day of month
+        day_of_week:
+          type: string
+          enum: [ mon, tue, wed, thu, fri, sat, sun ]
+          description: used for weekly when applicable
+        month_of_year:
+          type: integer
+          minimum: 1
+          maximum: 12
+          description: used for yearly when applicable
+        cron:
+          type: string
+          description: only when frequency=custom_cron; server-validated
+        timezone:
+          type: string
+          description: iana tz database name (e.g., America/Chicago)
+
+    ScheduleAmountMode:
+      type: string
+      enum: [ fixed, drawdown ]
+      description: |
+        fixed: charge a constant amount each occurrence.
+        drawdown: charge min(open_balance_remaining, per_occurrence_cap) until open balance reaches 0.
+
+    RecurringScheduleCapability:
+      type: object
+      required: [ action, allowed ]
+      properties:
+        action:
+          type: string
+          description: 'examples: schedule.pause, schedule.resume, schedule.cancel, schedule.skip_next, schedule.change_amount, schedule.change_open_balance, schedule.change_stored_account'
+          example: 'schedule.pause'
+        allowed:
+          type: boolean
+        until:
+          type: string
+          format: date-time
+          description: last instant at which this action remains allowed (e.g., before next run cutoff)
+        reason:
+          type: string
+
+    RecurringSchedule:
+      type: object
+      required: [ id, status, location_id, cadence, amount_mode, created_at, updated_at ]
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [ active, paused, canceled, completed ]
+        location_id:
+          type: string
+        customer_id:
+          type: string
+        stored_account_id:
+          type: string
+          description: used when creating the underlying payments; must be compatible with chosen rail
+        payment_method:
+          type: string
+          enum: [ ach, rtp, sameday_ach, auto ]
+          description: method used for generated payments; if auto, the creation-time selection rules apply
+        cadence:
+          $ref: '#/components/schemas/ScheduleCadence'
+        amount_mode:
+          $ref: '#/components/schemas/ScheduleAmountMode'
+        amount:
+          type: integer
+          minimum: 1
+          description: required when amount_mode=fixed
+        open_balance:
+          type: integer
+          minimum: 1
+          description: required when amount_mode=drawdown; total to collect across occurrences
+        per_occurrence_cap:
+          type: integer
+          minimum: 1
+          description: when amount_mode=drawdown, max amount per occurrence; default = open_balance
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+          description: optional absolute end; schedule auto-completes when passed
+        max_occurrences:
+          type: integer
+          minimum: 1
+          description: optional; stop after this many successful payments
+        next_run_at:
+          type: string
+          format: date-time
+          description: server-computed next occurrence instant in cadence.timezone
+        last_run_at:
+          type: string
+          format: date-time
+        occurrences_succeeded:
+          type: integer
+          default: 0
+        occurrences_failed:
+          type: integer
+          default: 0
+        open_balance_remaining:
+          type: integer
+          description: server-computed when amount_mode=drawdown
+        create_payment_template:
+          type: object
+          description: optional template fields copied into each generated payment
+          properties:
+            description: { type: string, maxLength: 60 }
+            settlement_instructions: { $ref: '#/components/schemas/SettlementInstructions' }
+            availability: { $ref: '#/components/schemas/AvailabilityRequest' }
+            metadata:
+              type: array
+              items: { $ref: '#/components/schemas/MetadataItem' }
+        capabilities:
+          type: array
+          items: { $ref: '#/components/schemas/RecurringScheduleCapability' }
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        canceled_at:
+          type: string
+          format: date-time
+
+    CreateRecurringScheduleRequest:
+      type: object
+      required: [ location_id, cadence, amount_mode, payment_method ]
+      properties:
+        location_id: { type: string }
+        customer_id: { type: string }
+        stored_account_id: { type: string }
+        payment_method:
+          type: string
+          enum: [ ach, rtp, sameday_ach, auto ]
+        cadence: { $ref: '#/components/schemas/ScheduleCadence' }
+        amount_mode: { $ref: '#/components/schemas/ScheduleAmountMode' }
+        amount:
+          type: integer
+          minimum: 1
+          description: required when amount_mode=fixed
+        open_balance:
+          type: integer
+          minimum: 1
+          description: required when amount_mode=drawdown
+        per_occurrence_cap:
+          type: integer
+          minimum: 1
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        max_occurrences:
+          type: integer
+          minimum: 1
+        create_payment_template:
+          $ref: '#/components/schemas/RecurringSchedule/properties/create_payment_template'
+        metadata:
+          type: array
+          items: { $ref: '#/components/schemas/MetadataItem' }
+
+    UpdateRecurringScheduleRequest:
+      type: object
+      description: patchable fields when schedule is not canceled/completed
+      properties:
+        customer_id: { type: string }
+        stored_account_id: { type: string }
+        cadence: { $ref: '#/components/schemas/ScheduleCadence' }
+        amount_mode: { $ref: '#/components/schemas/ScheduleAmountMode' }
+        amount: { type: integer, minimum: 1 }
+        open_balance: { type: integer, minimum: 1 }
+        per_occurrence_cap: { type: integer, minimum: 1 }
+        start_date: { type: string, format: date }
+        end_date: { type: string, format: date }
+        max_occurrences: { type: integer, minimum: 1 }
+        create_payment_template:
+          $ref: '#/components/schemas/RecurringSchedule/properties/create_payment_template'
+        metadata:
+          type: array
+          items: { $ref: '#/components/schemas/MetadataItem' }
+
+    RecurringActionRequest:
+      type: object
+      required: [ type, location_id ]
+      description: |
+        generic action request for schedules. examples:
+          - { "type": "schedule.pause", "location_id": "..." }
+          - { "type": "schedule.resume", "location_id": "..." }
+          - { "type": "schedule.cancel", "reason": "customer request", "location_id": "..." }
+          - { "type": "schedule.skip_next", "location_id": "..." }
+          - { "type": "schedule.change_amount", "amount": 5000, "location_id": "..." }
+          - { "type": "schedule.change_open_balance", "open_balance_delta": -2000, "location_id": "..." }
+          - { "type": "schedule.change_stored_account", "stored_account_id": "sa_123", "location_id": "..." }
+      properties:
+        type:
+          type: string
+          example: 'schedule.pause'
+        location_id:
+          type: string
+        reason:
+          type: string
+        amount:
+          type: integer
+          minimum: 1
+          description: used by schedule.change_amount (fixed mode)
+        open_balance_delta:
+          type: integer
+          description: used by schedule.change_open_balance; positive or negative
+        stored_account_id:
+          type: string
+          description: used by schedule.change_stored_account
+        params:
+          type: object
+          additionalProperties: true
+
+
+
+    SettlementInstruction:
+      description: one ordered settlement step; processed top-to-bottom
+      oneOf:
+        - type: object
+          required: [ type, amount ]
+          properties:
+            id: { type: string }
+            type: { type: string, enum: [ amount ] }
+            amount: { type: integer, minimum: 1 }
+            settlement_account_id:
+              type: string
+              description: explicit account under the payment's location_id; if omitted, use location default
+            description: { type: string, maxLength: 140 }
+        - type: object
+          required: [ type, percent ]
+          properties:
+            id: { type: string }
+            type: { type: string, enum: [ percent ] }
+            percent: { type: number, minimum: 0, maximum: 100 }
+            settlement_account_id:
+              type: string
+              description: explicit account under the payment's location_id; if omitted, use location default
+            description: { type: string, maxLength: 140 }
+        - type: object
+          required: [ type ]
+          properties:
+            id: { type: string }
+            type: { type: string, enum: [ remainder ] }
+            settlement_account_id:
+              type: string
+              description: explicit account under the payment's location_id; if omitted, use location default
+            description: { type: string, maxLength: 140 }
+
+    SettlementInstructions:
+      type: array
+      description: >
+        optional. processed in the order provided. if omitted or empty, the whole
+        amount is settled to the payment's location default. if no remainder is
+        provided, leftover goes to the payment's location default.
+      items:
+        $ref: '#/components/schemas/SettlementInstruction'
+
+    AvailabilityRequest:
+      type: object
+      description: optional availability request, evaluated in the context of the settlement for this payment
+      properties:
+        mode:
+          type: string
+          enum: [ standard, instant_if_approved ]
+          default: standard
+        max_approve_amount:
+          type: integer
+          minimum: 1
+        preferred_settlement_instruction_id:
+          type: string
+      additionalProperties: false
+
+    AvailabilityDecision:
+      type: object
+      description: availability decision returned on the payment
+      properties:
+        status:
+          type: string
+          enum: [ not_requested, approved, partially_approved, declined ]
+        reason:
+          type: string
+        approved_amount:
+          type: integer
+        applied_settlement_instruction_id:
+          type: string
+
+    RailPolicy:
+      type: object
+      description: hints used when payment_method=auto
+      properties:
+        preference:
+          type: string
+          enum: [ fast, cheap, balanced ]
+          default: balanced
+        allow_rtp: { type: boolean, default: true }
+        allow_sameday_ach: { type: boolean, default: true }
+        allow_ach: { type: boolean, default: true }
+
+    ErrorCode:
+      type: string
+      enum:
+        - auth.invalid_token
+        - auth.expired_token
+        - auth.insufficient_permissions
+        - auth.invalid_api_key
+        - validation.required_field
+        - validation.invalid_format
+        - validation.invalid_value
+        - validation.duplicate_idempotency_key
+        - business.insufficient_funds
+        - business.account_closed
+        - business.duplicate_payment
+        - business.duplicate_stored_account
+        - business.invalid_routing_number
+        - business.account_verification_failed
+        - business.payment_already_processed
+        - business.refund_exceeds_original
+        - business.stored_account_inactive
+        - business.action_not_supported_for_rail
+        - business.action_window_closed
+        - business.action_not_allowed_in_status
+        - business.reversal_not_permitted
+        - business.return_not_resubmittable
+        - rate_limit.exceeded
+        - system.internal_error
+        - system.service_unavailable
+        - system.timeout
+        - business.export_unsupported_filter
+        - business.export_too_large
+        - business.export_rate_limited
+
+
+    Problem:
+      type: object
+      required: [ type, title, error_code, request_id ]
+      properties:
+        type: { type: string, example: https://api.example.com/errors/validation }
+        title: { type: string, example: validation error }
+        status: { type: integer, example: 400 }
+        error_code: { $ref: '#/components/schemas/ErrorCode' }
+        detail: { type: string, example: the account number provided is invalid }
+        request_id: { type: string, format: uuid }
+        retry_after:
+          type: integer
+          description: seconds to wait before retrying (for 429)
+        errors:
+          type: array
+          description: detailed field-level errors for validation issues
+          items:
+            type: object
+            required: [ field, code, message ]
+            properties:
+              field: { type: string, example: account_number }
+              code: { $ref: '#/components/schemas/ErrorCode' }
+              message: { type: string, example: account number must be between 4 and 17 digits }
+
+    StoredAccount:
+      type: object
+      required: [ id, type, status, fingerprint, location_id, created_at, updated_at ]
+      properties:
+        id: { type: string, format: uuid }
+        type: { type: string, enum: [ ach, rtp ] }
+        nickname: { type: string }
+        bank_name: { type: string }
+        account_type:
+          type: string
+          enum: [ C, S, L ]
+          description: C=checking, S=savings, L=ledger (ach only)
+        routing_number_masked: { type: string, example: "*****6789" }
+        account_number_last4:
+          type: string
+          minLength: 4
+          maxLength: 4
+        fingerprint:
+          type: string
+          description: unique identifier for this account across all locations/partners
+        verification:
+          type: object
+          properties:
+            status: { type: string, enum: [ not_requested, pending, passed, failed ] }
+            reason: { type: string }
+            verified_at: { type: string, format: date-time }
+        status: { type: string, enum: [ active, inactive ] }
+        location_id: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    CreateAchStoredAccountRequest:
+      type: object
+      required: [ type, routing_number, account_number, account_type, location_id ]
+      properties:
+        type: { type: string, enum: [ ach ] }
+        routing_number: { type: string, pattern: '^[0-9]{9}$' }
+        account_number: { type: string, pattern: '^[0-9]{4,17}$' }
+        account_type: { type: string, enum: [ C, S, L ] }
+        bank_name: { type: string }
+        nickname: { type: string }
+        request_validation: { type: boolean }
+        location_id: { type: string }
+
+    CreateRtpStoredAccountRequest:
+      type: object
+      required: [ type, routing_number, account_number, location_id ]
+      properties:
+        type: { type: string, enum: [ rtp ] }
+        routing_number: { type: string, pattern: '^[0-9]{9}$' }
+        account_number: { type: string, pattern: '^[0-9]{4,17}$' }
+        bank_name: { type: string }
+        nickname: { type: string }
+        location_id: { type: string }
+
+    ReturnDetails:
+      type: object
+      properties:
+        code: { type: string }
+        description: { type: string }
+        returned_at: { type: string, format: date-time }
+        resubmittable:
+          type: boolean
+          description: true if this return can be resubmitted via actions type "ach.resubmit_return"
+
+    AchPaymentDetails:
+      type: object
+      required: [ sec_code ]
+      properties:
+        sec_code: { type: string, enum: [ CCD, PPD, TEL, WEB ] }
+        effective_date: { type: string, format: date }
+        ach_extensions: { $ref: '#/components/schemas/AchExtensions' }
+
+    RtpPaymentDetails:
+      type: object
+      properties:
+        rtp_extensions: { $ref: '#/components/schemas/RtpExtensions' }
+
+    AchExtensions:
+      type: object
+      properties:
+        tel:
+          type: object
+          properties:
+            authorization_obtained: { type: boolean }
+            phone_number: { type: string }
+            contact_name: { type: string }
+        web:
+          type: object
+          properties:
+            payment_type: { type: string, enum: [ S, R ] }
+            customer_ip: { type: string }
+            user_agent: { type: string }
+        addenda:
+          type: array
+          maxItems: 10
+          items: { type: string, maxLength: 80 }
+
+    RtpExtensions:
+      type: object
+      properties:
+        remittance_information: { type: string, maxLength: 140 }
+        end_to_end_id: { type: string, maxLength: 35 }
+
+    PaymentCapability:
+      type: object
+      required: [ action, allowed ]
+      properties:
+        action:
+          type: string
+          description: 'examples: refund, cancel, ach.reverse, ach.resubmit_return'
+          example: 'ach.reverse'
+        allowed: { type: boolean }
+        until:
+          type: string
+          format: date-time
+          description: last instant at which this action remains allowed
+        reason:
+          type: string
+          description: present if not allowed, explains why
+
+    Payment:
+      type: object
+      required:
+        - id
+        - amount
+        - currency
+        - direction
+        - status
+        - location_id
+        - payment_method
+        - created_at
+        - updated_at
+      properties:
+        id: { type: string }
+        stored_account_id: { type: string }
+        payment_method: { type: string, enum: [ ach, rtp, sameday_ach, auto ] }
+        actual_payment_method:
+          type: string
+          enum: [ ach, rtp, sameday_ach ]
+          description: rail actually used when payment_method=auto
+        rail_decision_reason:
+          type: string
+          description: explains why the platform selected a particular rail when payment_method=auto
+        amount: { type: integer, minimum: 1, maximum: 99999999 }
+        currency: { type: string, default: USD }
+        direction: { type: string, enum: [ debit, credit ] }
+        description: { type: string, maxLength: 60 }
+        status:
+          type: string
+          enum: [ pending, validating, scheduled, processing, settled, returned, canceled, reversed, failed ]
+        status_reason: { type: string }
+        location_id: { type: string }
+        ach_details: { $ref: '#/components/schemas/AchPaymentDetails' }
+        rtp_details: { $ref: '#/components/schemas/RtpPaymentDetails' }
+        return_details: { $ref: '#/components/schemas/ReturnDetails' }
+        availability: { $ref: '#/components/schemas/AvailabilityDecision' }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        settled_at: { type: string, format: date-time }
+        metadata:
+          type: array
+          items: { $ref: '#/components/schemas/MetadataItem' }
+        capabilities:
+          type: array
+          items: { $ref: '#/components/schemas/PaymentCapability' }
+        recurring_schedule_id:
+          type: string
+          description: present when this payment was generated by a recurring schedule
+
+    CreatePaymentRequest:
+      type: object
+      required: [ payment_method, amount, direction, location_id ]
+      properties:
+        payment_method: { type: string, enum: [ ach, rtp, sameday_ach, auto ] }
+        rail_policy: { $ref: '#/components/schemas/RailPolicy' }
+        stored_account_id:
+          type: string
+          description: id of an existing stored account suitable for this rail
+        onetime_ach:
+          description: one-time ach details (alternative to stored_account_id, only valid when payment_method=ach or payment_method=auto and ach is chosen)
+          type: object
+          required: [ routing_number, account_number, account_type, name ]
+          properties:
+            name: { type: string, maxLength: 50 }
+            routing_number: { type: string, pattern: '^[0-9]{9}$' }
+            account_number: { type: string, pattern: '^[0-9]{4,17}$' }
+            account_type: { type: string, enum: [ C, S, L ] }
+        amount: { type: integer, minimum: 1, maximum: 99999999 }
+        currency: { type: string, default: USD }
+        direction: { type: string, enum: [ debit, credit ] }
+        description: { type: string, maxLength: 60 }
+        location_id: { type: string }
+        settlement_instructions: { $ref: '#/components/schemas/SettlementInstructions' }
+        availability: { $ref: '#/components/schemas/AvailabilityRequest' }
+        ach_details: { $ref: '#/components/schemas/AchPaymentDetails' }
+        rtp_details: { $ref: '#/components/schemas/RtpPaymentDetails' }
+        metadata:
+          type: array
+          items: { $ref: '#/components/schemas/MetadataItem' }
+
+    Refund:
+      type: object
+      properties:
+        id: { type: string }
+        payment_id: { type: string }
+        amount: { type: integer }
+        status: { type: string, enum: [ pending, processing, settled, failed ] }
+        location_id: { type: string }
+        created_at: { type: string, format: date-time }
+
+    CreateRefundRequest:
+      type: object
+      required: [ amount, location_id ]
+      properties:
+        amount: { type: integer, minimum: 1 }
+        reason: { type: string }
+        location_id: { type: string }
+
+    CancelPaymentRequest:
+      type: object
+      required: [ reason, location_id ]
+      properties:
+        reason: { type: string }
+        location_id: { type: string }
+
+    ResubmitReturnRequest:
+      type: object
+      required: [ amount, location_id ]
+      properties:
+        amount: { type: integer, minimum: 1 }
+        location_id: { type: string }
+
+    ActionRequest:
+      type: object
+      required: [ type, location_id ]
+      description: >
+        generic action request. required fields depend on the action type.
+        current action types include:
+        - refund
+        - cancel
+        - ach.reverse
+        - ach.resubmit_return
+      properties:
+        type:
+          type: string
+          example: ach.reverse
+        location_id:
+          type: string
+        reason:
+          type: string
+          description: optional free-form human readable reason
+        amount:
+          type: integer
+          description: for refund or ach.resubmit_return when partial amounts are allowed
+        client_reference_id:
+          type: string
+          maxLength: 64
+        note:
+          type: string
+          maxLength: 256
+        attestations:
+          type: object
+          description: operator attestations required by rulebook / internal policy
+          properties:
+            receiver_notified: { type: boolean }
+            initiated_in_error: { type: boolean }
+        params:
+          type: object
+          additionalProperties: true
+          description: reserved for action-specific key/values (e.g., resubmit routing/account overrides if allowed)
+
+    Action:
+      type: object
+      description: represents an asynchronous action invoked against a payment
+      properties:
+        id: { type: string }
+        payment_id: { type: string }
+        type: { type: string, example: ach.reverse }
+        status: { type: string, enum: [ queued, running, succeeded, failed ] }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        result:
+          type: object
+          description: populated on success; fields vary by action type
+          properties:
+            updated_payment: { $ref: '#/components/schemas/Payment' }
+            created_refund_id: { type: string }
+            created_reversal_id: { type: string }
+            new_payment_id: { type: string }
+        problem:
+          $ref: '#/components/schemas/Problem'
+
+    JobType:
+      type: string
+      description: logical type of the async job
+      enum:
+        - exports.payments
+        - exports.stored_accounts
+
+    JobStatus:
+      type: string
+      enum: [ queued, running, succeeded, failed ]
+
+    Job:
+      type: object
+      description: represents an asynchronous job not scoped to a single domain resource
+      properties:
+        id:
+          type: string
+        type:
+          $ref: '#/components/schemas/JobType'
+        status:
+          $ref: '#/components/schemas/JobStatus'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        result:
+          type: object
+          description: populated on success; fields vary by job type
+          properties:
+            export:
+              $ref: '#/components/schemas/ExportResult'
+        problem:
+          $ref: '#/components/schemas/Problem'
+
+paths:
+  /stored-accounts:
+    post:
+      tags: [core payments]
+      summary: create stored account
+      description: create an ach or rtp stored account. the request must include type as ach or rtp
+      operationId: createStoredAccount
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/CreateAchStoredAccountRequest'
+                - $ref: '#/components/schemas/CreateRtpStoredAccountRequest'
+      responses:
+        '201':
+          description: stored account created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StoredAccount' }
+        '400':
+          description: bad request
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '409':
+          description: duplicate stored account
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                type: https://api.example.com/errors/business
+                title: duplicate stored account
+                status: 409
+                error_code: business.duplicate_stored_account
+                detail: this account is already stored for this location
+                request_id: 550e8400-e29b-41d4-a716-446655440000
+
+  /stored-accounts/{stored_account_id}:
+    get:
+      tags: [core payments]
+      summary: get stored account
+      operationId: getStoredAccount
+      parameters:
+        - name: stored_account_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: stored account details
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StoredAccount' }
+        '404':
+          description: stored account not found
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+
+  /payments:
+    post:
+      tags: [core payments]
+      summary: create payment
+      description: |
+        create an ach, rtp, sameday_ach or auto-selected payment.
+        when payment_method=ach you may provide either stored_account_id (recommended) or onetime_ach.
+        when payment_method=auto, the platform will use rail_policy to try real-time rails first (when allowed), else fall back to ach;
+        in auto mode, ach still requires either stored_account_id or onetime_ach.
+        request location_id is required.
+        availability is optional and, when present, is evaluated against the settlement for this payment.
+      operationId: createPayment
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreatePaymentRequest' }
+      responses:
+        '201':
+          description: payment created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Payment' }
+        '400':
+          description: bad request
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '429':
+          description: rate limit exceeded
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+
+  /payments/{payment_id}:
+    get:
+      tags: [core payments]
+      summary: get payment
+      operationId: getPayment
+      parameters:
+        - name: payment_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: payment details
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Payment' }
+        '404':
+          description: payment not found
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+
+  /payments/{payment_id}/actions:
+    post:
+      tags: [actions]
+      summary: enqueue an action for a payment
+      description: |
+        unified action surface. actions are validated against current payment capabilities
+        and rail-specific rules. examples:
+        - { "type": "refund", "amount": 100, "location_id": "..." }
+        - { "type": "cancel", "reason": "...", "location_id": "..." }
+        - { "type": "ach.reverse", "reason": "duplicate", "attestations": { "initiated_in_error": true }, "location_id": "..." }
+        - { "type": "ach.resubmit_return", "amount": 5000, "location_id": "..." }
+      operationId: createPaymentAction
+      parameters:
+        - name: payment_id
+          in: path
+          required: true
+          schema: { type: string }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ActionRequest' }
+      responses:
+        '202':
+          description: action accepted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Action' }
+        '400':
+          description: invalid action request
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              examples:
+                unsupported_rail:
+                  value:
+                    type: https://api.example.com/errors/business
+                    title: action not supported for rail
+                    status: 400
+                    error_code: business.action_not_supported_for_rail
+                    detail: this action is not available for the payment's rail
+                    request_id: 550e8400-e29b-41d4-a716-446655440001
+                window_closed:
+                  value:
+                    type: https://api.example.com/errors/business
+                    title: action window closed
+                    status: 400
+                    error_code: business.action_window_closed
+                    detail: payment is past the allowed window for this action
+                    request_id: 550e8400-e29b-41d4-a716-446655440002
+        '404':
+          description: payment not found
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+
+  /actions/{action_id}:
+    get:
+      tags: [actions]
+      summary: get action status
+      operationId: getAction
+      parameters:
+        - name: action_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: action details
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Action' }
+        '404':
+          description: action not found
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+
+  /customers:
+    post:
+      tags: [recurring]
+      summary: create customer
+      operationId: createCustomer
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateCustomerRequest' }
+      responses:
+        '201':
+          description: customer created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Customer' }
+        '400':
+          description: bad request
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+
+  /customers/{customer_id}:
+    get:
+      tags: [recurring]
+      summary: get customer
+      operationId: getCustomer
+      parameters:
+        - name: customer_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: customer
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Customer' }
+        '404':
+          description: not found
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+
+    patch:
+      tags: [recurring]
+      summary: update customer
+      operationId: updateCustomer
+      parameters:
+        - name: customer_id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/CreateCustomerRequest'
+      responses:
+        '200':
+          description: updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Customer' }
+        '400':
+          description: bad request
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+
+  /recurring-schedules:
+    post:
+      tags: [recurring]
+      summary: create recurring schedule
+      operationId: createRecurringSchedule
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateRecurringScheduleRequest' }
+      responses:
+        '201':
+          description: schedule created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RecurringSchedule' }
+        '400':
+          description: bad request
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+
+  /recurring-schedules/{schedule_id}:
+    get:
+      tags: [recurring]
+      summary: get recurring schedule
+      operationId: getRecurringSchedule
+      parameters:
+        - name: schedule_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: schedule
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RecurringSchedule' }
+        '404':
+          description: not found
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+
+    patch:
+      tags: [recurring]
+      summary: update recurring schedule
+      operationId: updateRecurringSchedule
+      parameters:
+        - name: schedule_id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateRecurringScheduleRequest' }
+      responses:
+        '200':
+          description: updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RecurringSchedule' }
+        '400':
+          description: bad request
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+
+  /recurring-schedules/{schedule_id}/actions:
+    post:
+      tags: [recurring]
+      summary: enqueue an action for a recurring schedule
+      operationId: createRecurringScheduleAction
+      parameters:
+        - name: schedule_id
+          in: path
+          required: true
+          schema: { type: string }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RecurringActionRequest' }
+      responses:
+        '202':
+          description: action accepted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Action' }
+        '400':
+          description: invalid action
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '404':
+          description: not found
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+  /exports/payments:
+    post:
+      tags: [exports & jobs]
+      summary: create payments export
+      description: |
+        creates an asynchronous export job for payments matching the provided filters.
+        when ready, the job's result includes a short-lived download_url to a static snapshot (csv or ndjson).
+      operationId: createPaymentsExport
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentsExportRequest'
+      responses:
+        '202':
+          description: export accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+        '400':
+          description: invalid export request
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '429':
+          description: rate limited
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+
+  /exports/stored-accounts:
+    post:
+      tags: [exports & jobs]
+      summary: create stored accounts export
+      description: |
+        creates an asynchronous export job for stored accounts matching the provided filters.
+        when ready, the job's result includes a short-lived download_url to a static snapshot (csv or ndjson).
+      operationId: createStoredAccountsExport
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoredAccountsExportRequest'
+      responses:
+        '202':
+          description: export accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+        '400':
+          description: invalid export request
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '429':
+          description: rate limited
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+  /jobs/{job_id}:
+    get:
+      tags: [exports & jobs]
+      summary: get job status
+      operationId: getJob
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: job details
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Job' }
+        '404':
+          description: not found
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+
+  /webhooks/endpoints:
+    get:
+      tags: [webhooks]
+      summary: list webhook endpoints
+      operationId: listWebhookEndpoints
+      responses:
+        '200':
+          description: list of webhook endpoints
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WebhookEndpoint'
+    post:
+      tags: [webhooks]
+      summary: create webhook endpoint
+      operationId: createWebhookEndpoint
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - endpoint_url
+                - enabled_events
+              properties:
+                endpoint_url:
+                  type: string
+                  format: uri
+                enabled_events:
+                  type: array
+                  items:
+                    type: string
+                description:
+                  type: string
+      responses:
+        '201':
+          description: webhook endpoint created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookEndpoint'
+
+  /webhooks/endpoints/{endpoint_id}:
+    get:
+      tags: [webhooks]
+      summary: get webhook endpoint
+      operationId: getWebhookEndpoint
+      parameters:
+        - name: endpoint_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: webhook endpoint
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookEndpoint'
+    put:
+      tags: [webhooks]
+      summary: update webhook endpoint
+      operationId: updateWebhookEndpoint
+      parameters:
+        - name: endpoint_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                endpoint_url:
+                  type: string
+                  format: uri
+                enabled_events:
+                  type: array
+                  items:
+                    type: string
+                description:
+                  type: string
+                signing_secrets:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: webhook endpoint updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookEndpoint'
+    delete:
+      tags: [webhooks]
+      summary: delete webhook endpoint
+      operationId: deleteWebhookEndpoint
+      parameters:
+        - name: endpoint_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '204':
+          description: webhook endpoint deleted

@@ -1,0 +1,158 @@
+import { defineConfig } from "mintlify/config";
+
+export default defineConfig({
+  name: "Payments Platform Docs",
+  logo: { light: "/static/logo.svg", dark: "/static/logo.svg" },
+  openapi: ["api/openapi.yaml"],
+  colors: {
+    primary: "#0ea5e9",
+    light: "#f8fafc",
+    dark: "#0b1220"
+  },
+  topbarLinks: [
+    { name: "API Status", href: "/platform-operations/service-status-page" }
+  ],
+  navigation: [
+    {
+      group: "Getting Started",
+      pages: [
+        "getting-started/overview-introduction",
+        "getting-started/quick-start-guide",
+        "getting-started/authentication-setup",
+        "getting-started/sandbox-environment",
+        "getting-started/postman-and-openapi"
+      ]
+    },
+    {
+      group: "Core Concepts",
+      pages: [
+        "core-concepts/payment-rails-explained",
+        "core-concepts/payment-lifecycle",
+        "core-concepts/settlement-instructions",
+        "core-concepts/instant-availability",
+        "core-concepts/automatic-rail-selection",
+        "core-concepts/account-validation-methods",
+        "core-concepts/idempotency"
+      ]
+    },
+    {
+      group: "Authentication & Security",
+      pages: [
+        "authentication-security/oauth2-implementation",
+        "authentication-security/api-keys-and-scoping",
+        "authentication-security/token-scopes-and-permissions",
+        "authentication-security/encryption-at-rest",
+        "authentication-security/pci-and-compliance"
+      ]
+    },
+    {
+      group: "Testing & Development",
+      pages: [
+        "testing-development/test-bank-accounts",
+        "testing-development/ach-return-code-simulator",
+        "testing-development/return-and-failure-scenarios",
+        "testing-development/test-card-numbers",
+        "testing-development/microdeposit-testing",
+        "testing-development/prenote-testing"
+      ]
+    },
+    {
+      group: "Payment Operations",
+      pages: [
+        "payment-operations/creating-payments",
+        "payment-operations/payment-status-and-tracking",
+        "payment-operations/smart-retries",
+        "payment-operations/canceling-and-refunding-payments",
+        "payment-operations/recurring-payments",
+        "payment-operations/batch-payments"
+      ]
+    },
+    {
+      group: "Webhooks",
+      pages: [
+        "webhooks/webhook-overview",
+        "webhooks/event-types",
+        "webhooks/webhook-configuration",
+        "webhooks/signature-verification",
+        "webhooks/replay-protection",
+        "webhooks/retry-logic",
+        "webhooks/webhook-debugging"
+      ]
+    },
+    {
+      group: "Error Handling & Reliability",
+      pages: [
+        "error-handling-reliability/error-response-format",
+        "error-handling-reliability/error-code-reference",
+        "error-handling-reliability/rate-limiting",
+        "error-handling-reliability/timeouts-and-retry-logic",
+        "error-handling-reliability/circuit-breaking"
+      ]
+    },
+    {
+      group: "Reconciliation & Reporting",
+      pages: [
+        "reconciliation-reporting/payment-reconciliation",
+        "reconciliation-reporting/transaction-history",
+        "reconciliation-reporting/settlement-reports",
+        "reconciliation-reporting/audit-logs"
+      ]
+    },
+    {
+      group: "API Reference",
+      pages: [
+        "api-reference/overview"
+      ]
+    },
+    {
+      group: "API Versioning & Changes",
+      pages: [
+        "api-versioning-changes/versioning-strategy",
+        "api-versioning-changes/deprecation-policy",
+        "api-versioning-changes/changelog",
+        "api-versioning-changes/migration-guides"
+      ]
+    },
+    {
+      group: "Platform Operations",
+      pages: [
+        "platform-operations/service-status-page",
+        "platform-operations/sla-and-uptime",
+        "platform-operations/incident-webhooks",
+        "platform-operations/performance-and-latency",
+        "platform-operations/maintenance-windows"
+      ]
+    },
+    {
+      group: "Integration Guides",
+      pages: [
+        "integration-guides/platform-integration-patterns",
+        "integration-guides/isv-integration-guide",
+        "integration-guides/gateway-integration",
+        "integration-guides/mobile-sdk-integration",
+        "integration-guides/white-label-considerations"
+      ]
+    },
+    {
+      group: "Advanced Topics",
+      pages: [
+        "advanced-topics/multi-currency-support",
+        "advanced-topics/international-payments",
+        "advanced-topics/custom-settlement-schedules",
+        "advanced-topics/metadata-and-custom-fields",
+        "advanced-topics/bulk-operations"
+      ]
+    },
+    {
+      group: "Support & Resources",
+      pages: [
+        "support-resources/faq",
+        "support-resources/glossary",
+        "support-resources/code-examples",
+        "support-resources/sdks-and-libraries",
+        "support-resources/support-channels",
+        "support-resources/developer-community"
+      ]
+    }
+  ]
+});
