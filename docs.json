@@ -1,6 +1,6 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
+  "theme": "palm",
   "name": "Payments Platform Docs",
   "logo": { "light": "/static/logo.svg", "dark": "/static/logo.svg" },
 
@@ -10,7 +10,7 @@
 
   "navigation": {
     "groups": [
-      {
+        {
         "group": "Getting Started",
         "pages": [
           "getting-started/overview-introduction",
