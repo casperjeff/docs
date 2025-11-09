@@ -1,69 +1,431 @@
 ---
-title: Welcome
-description: Streamline is an ultra-modern payments API by iStream Financial—built for ISVs, gateways, and partners who need powerful rails, clear observability, and a painless integration experience.
+title: "Welcome to Streamline"
+description: "The modern payments API designed for seamless integration"
 ---
 
-# Streamline by iStream Financial
+## Payments Integration, Simplified
 
-Streamline is an ultra-modern payments API designed to make integrations with ISVs, gateways, and other partners as easy as possible—while providing world-class features and deep visibility across the entire payments lifecycle.
+**Streamline**, powered by [iStream Financial](https://istreamfinancial.com), is an ultra-modern payments API designed to make integration with ISVs, gateways, and partners effortless. Get world-class features, complete lifecycle observability, and unmatched developer experience—all in one platform.
 
-## Why Streamline
+<CardGroup cols={2}>
+  <Card
+    title="Quick Start"
+    icon="rocket"
+    href="/guides/getting-started"
+  >
+    Get your first payment processing in under 10 minutes
+  </Card>
+  <Card
+    title="API Reference"
+    icon="code"
+    href="/api-reference/introduction"
+  >
+    Explore our comprehensive API documentation
+  </Card>
+  <Card
+    title="ACH Concepts"
+    icon="university"
+    href="/guides/ach-concepts"
+  >
+    Master ACH payments with our in-depth guide
+  </Card>
+  <Card
+    title="Sandbox Testing"
+    icon="flask"
+    href="/guides/testing-development"
+  >
+    Test everything in our full-featured sandbox
+  </Card>
+</CardGroup>
 
-- **built for partners** — first-class patterns for ISVs, gateways, and embedded finance
-- **powerful rails** — ach (same-day, next-day), rtp, and flexible rail selection strategies
-- **end-to-end observability** — clear states, webhooks, idempotency, and auditability
-- **smart operations** — automatic rail selection, smart retries, and instant availability evaluation
-- **enterprise-grade** — oauth2, scoped api keys, encryption at rest, pci-aware practices
+---
 
-## What you can build
+## Why Choose Streamline?
 
-- payouts and collections at scale
-- recurring billing with clear reconciliation and settlement reporting
-- pass-through or aggregated gateway flows
-- white-label partner experiences with custom domains and branding
+<AccordionGroup>
+  <Accordion title="Built for Modern Integrations" icon="plug">
+    Designed from the ground up for ISVs, payment gateways, and partners who need flexible, powerful payment capabilities without the complexity.
 
-## Quick start
+    - **RESTful API** with intuitive resource design
+    - **OpenAPI 3.0** specification for code generation
+    - **Webhooks** for real-time event notifications
+    - **SDKs** coming soon for popular languages
+  </Accordion>
 
-Get up and running in minutes.
+  <Accordion title="Multiple Payment Rails, One API" icon="railroad">
+    Support ACH, Same-Day ACH, and Real-Time Payments (RTP) through a unified interface.
 
-1. **read the overview** → [/getting-started/overview-introduction](/getting-started/overview-introduction)  
-2. **run the 5-minute quick start** → [/getting-started/quick-start-guide](/getting-started/quick-start-guide)  
-3. **set up auth** → [/getting-started/authentication-setup](/getting-started/authentication-setup)  
-4. **use the sandbox** → [/getting-started/sandbox-environment](/getting-started/sandbox-environment)  
-5. **import postman or openapi** → [/getting-started/postman-and-openapi](/getting-started/postman-and-openapi)
+    - **Standard ACH** - Cost-effective 1-2 day settlement
+    - **Same-Day ACH** - Expedited same-business-day processing
+    - **RTP** - Instant, 24/7/365 real-time payments
+    - **Automatic Rail Selection** - Let Streamline choose the optimal rail
+  </Accordion>
 
-## Core concepts you’ll use
+  <Accordion title="Smart Features That Just Work" icon="wand-magic-sparkles">
+    Sophisticated capabilities that feel simple to use.
 
-- **payment rails** → [/core-concepts/payment-rails-explained](/core-concepts/payment-rails-explained)  
-- **lifecycle & states** → [/core-concepts/payment-lifecycle](/core-concepts/payment-lifecycle)  
-- **settlement instructions** → [/core-concepts/settlement-instructions](/core-concepts/settlement-instructions)  
-- **instant availability** → [/core-concepts/instant-availability](/core-concepts/instant-availability)  
-- **automatic rail selection** → [/core-concepts/automatic-rail-selection](/core-concepts/automatic-rail-selection)  
-- **account validation methods** → [/core-concepts/account-validation-methods](/core-concepts/account-validation-methods)  
-- **idempotency** → [/core-concepts/idempotency](/core-concepts/idempotency)
+    - **Settlement Orchestration** - Split payments with flat amounts, percentages, and remainder logic
+    - **Instant Availability** - Optional instant funds availability evaluation
+    - **Smart Retries** - Bank-grade calendars and funds availability heuristics
+    - **Idempotency** - Built-in protection against duplicate charges
+  </Accordion>
 
-## A tiny taste
+  <Accordion title="Complete Lifecycle Observability" icon="chart-line">
+    See exactly what's happening with every payment, every step of the way.
 
-Authenticate with client credentials and make your first request. Replace placeholders to match your environment.
+    - **Real-time Status Updates** via webhooks
+    - **Comprehensive Audit Logs** for compliance and debugging
+    - **Settlement Tracking** with detailed breakdowns
+    - **Performance Metrics** and analytics
+  </Accordion>
 
+  <Accordion title="Account Validation Made Easy" icon="circle-check">
+    Multiple validation methods to ensure account accuracy before processing.
+
+    - **Microdeposit Verification** - Traditional 1-2 day validation
+    - **Prenotes** - Zero-dollar NACHA-compliant validation
+    - **Instant Verification** - Real-time 3rd party account lookup
+    - **Automatic NOC Handling** - Updates accounts with bank corrections
+  </Accordion>
+
+  <Accordion title="Enterprise-Grade Security" icon="shield-halved">
+    Bank-level security and compliance built into every layer.
+
+    - **AES-256 Encryption** at rest for all sensitive data
+    - **OAuth 2.0** with fine-grained API key scoping
+    - **PCI DSS Compliant** infrastructure
+    - **SOC 2 Type II** certified
+    - **NACHA Compliant** ACH processing
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Get Started in Minutes
+
+<Steps>
+  <Step title="Create Your Account">
+    Sign up for a Streamline account and get instant access to our sandbox environment.
+
+    [Sign Up Now →](https://dashboard.streamline.example.com/signup)
+  </Step>
+
+  <Step title="Get Your API Keys">
+    Generate your API credentials from the dashboard—separate keys for sandbox and production.
 ```bash
-# 1) get an access token
-curl -s -X POST "$API_BASE/oauth2/token" \
-  -u "$CLIENT_ID:$CLIENT_SECRET" \
-  -d "grant_type=client_credentials" \
-  -d "scope=payments:write payments:read" \
-  | jq .
+    # Your API credentials
+    Sandbox: sk_sandbox_...
+    Production: sk_live_...
+```
+  </Step>
 
-# 2) create a payment (example shape)
-curl -s -X POST "$API_BASE/payments" \
-  -H "authorization: Bearer $ACCESS_TOKEN" \
-  -H "content-type: application/json" \
-  -H "idempotency-key: $UNIQUE_KEY" \
-  -d '{
-    "amount": "125.00",
-    "currency": "USD",
-    "payment_method": "auto",
-    "source_account_id": "acct_src_123",
-    "destination_account_id": "acct_dest_456",
-    "metadata": { "order_id": "ORD-10001" }
-  }' | jq .
+  <Step title="Make Your First Request">
+    Create a stored account and process your first payment.
+
+    <CodeGroup>
+```bash cURL
+    curl https://sandbox.api.streamline.example.com/v3/stored-accounts \
+      -H "Authorization: Bearer sk_sandbox_..." \
+      -H "Idempotency-Key: $(uuidgen)" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "type": "ach",
+        "location_id": "loc_123",
+        "account_number": "123456789",
+        "routing_number": "021000021",
+        "account_type": "checking",
+        "account_holder_name": "Jane Doe"
+      }'
+```
+```python Python
+    import requests
+    import uuid
+
+    response = requests.post(
+        'https://sandbox.api.streamline.example.com/v3/stored-accounts',
+        headers={
+            'Authorization': 'Bearer sk_sandbox_...',
+            'Idempotency-Key': str(uuid.uuid4()),
+            'Content-Type': 'application/json'
+        },
+        json={
+            'type': 'ach',
+            'location_id': 'loc_123',
+            'account_number': '123456789',
+            'routing_number': '021000021',
+            'account_type': 'checking',
+            'account_holder_name': 'Jane Doe'
+        }
+    )
+
+    account = response.json()
+    print(f"Account created: {account['id']}")
+```
+```javascript Node.js
+    const axios = require('axios');
+    const { v4: uuidv4 } = require('uuid');
+
+    const response = await axios.post(
+      'https://sandbox.api.streamline.example.com/v3/stored-accounts',
+      {
+        type: 'ach',
+        location_id: 'loc_123',
+        account_number: '123456789',
+        routing_number: '021000021',
+        account_type: 'checking',
+        account_holder_name: 'Jane Doe'
+      },
+      {
+        headers: {
+          'Authorization': 'Bearer sk_sandbox_...',
+          'Idempotency-Key': uuidv4(),
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    console.log('Account created:', response.data.id);
+```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Process a Payment">
+    Create a payment against your stored account.
+```bash
+    curl https://sandbox.api.streamline.example.com/v3/payments \
+      -H "Authorization: Bearer sk_sandbox_..." \
+      -H "Idempotency-Key: $(uuidgen)" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "location_id": "loc_123",
+        "payment_method": "ach",
+        "stored_account_id": "acct_...",
+        "amount": 100.00,
+        "direction": "debit",
+        "description": "Test payment"
+      }'
+```
+  </Step>
+
+  <Step title="Set Up Webhooks">
+    Get real-time notifications about payment events.
+```bash
+    curl https://sandbox.api.streamline.example.com/v3/webhook-endpoints \
+      -H "Authorization: Bearer sk_sandbox_..." \
+      -H "Content-Type: application/json" \
+      -d '{
+        "url": "https://your-app.com/webhooks",
+        "events": ["payment.created", "payment.settled", "payment.failed"]
+      }'
+```
+  </Step>
+</Steps>
+
+---
+
+## Key Features at a Glance
+
+<CardGroup cols={3}>
+  <Card title="Settlement Control" icon="split">
+    Split payments with flat amounts, percentages, and remainder logic
+  </Card>
+
+  <Card title="Instant Availability" icon="bolt">
+    Optional instant funds availability evaluation
+  </Card>
+
+  <Card title="Auto Rail Selection" icon="route">
+    Let the platform choose the best payment rail
+  </Card>
+
+  <Card title="Smart Retries" icon="rotate">
+    Bank-grade calendars and retry logic
+  </Card>
+
+  <Card title="ACH Return Simulator" icon="flask-vial">
+    Test every return code in sandbox
+  </Card>
+
+  <Card title="Comprehensive Webhooks" icon="webhook">
+    Real-time events with replay protection
+  </Card>
+
+  <Card title="Idempotency Keys" icon="fingerprint">
+    Built-in duplicate prevention
+  </Card>
+
+  <Card title="Rate Limiting" icon="gauge-high">
+    Standard headers with adaptive throttling
+  </Card>
+
+  <Card title="Audit Logs" icon="file-lines">
+    Complete activity history for compliance
+  </Card>
+</CardGroup>
+
+---
+
+## Perfect for Your Use Case
+
+<Tabs>
+  <Tab title="ISVs">
+    ### Independent Software Vendors
+
+    Build payment capabilities directly into your SaaS platform.
+
+    <Check>Multi-tenant architecture support</Check>
+    <Check>White-label ready</Check>
+    <Check>Flexible settlement for marketplace scenarios</Check>
+    <Check>Comprehensive webhooks for customer notifications</Check>
+
+    [Read ISV Integration Guide →](/guides/integration-guides#isv-integration-guide)
+  </Tab>
+
+  <Tab title="Payment Gateways">
+    ### Payment Gateway Providers
+
+    Expand your payment rails offering with minimal integration effort.
+
+    <Check>Pass-through and aggregation patterns</Check>
+    <Check>Automatic rail selection and routing</Check>
+    <Check>Settlement orchestration for complex fee structures</Check>
+    <Check>Real-time status updates via webhooks</Check>
+
+    [Read Gateway Integration Guide →](/guides/integration-guides#gateway-integration)
+  </Tab>
+
+  <Tab title="Partners">
+    ### Integration Partners
+
+    Connect your platform to modern ACH and RTP capabilities.
+
+    <Check>RESTful API with OpenAPI spec</Check>
+    <Check>Comprehensive testing environment</Check>
+    <Check>Multiple authentication options</Check>
+    <Check>Complete lifecycle observability</Check>
+
+    [Read Integration Patterns →](/guides/integration-guides)
+  </Tab>
+</Tabs>
+
+---
+
+## Comprehensive Documentation
+
+<CardGroup cols={2}>
+  <Card title="Core Concepts" icon="lightbulb" href="/guides/core-concepts">
+    Understand payment rails, lifecycle, settlement, and validation
+  </Card>
+
+  <Card title="ACH Deep Dive" icon="book-open" href="/guides/ach-concepts">
+    Master SEC codes, returns, reversals, and NACHA compliance
+  </Card>
+
+  <Card title="Authentication & Security" icon="lock" href="/guides/authentication-security">
+    OAuth2, API keys, encryption, and compliance
+  </Card>
+
+  <Card title="Testing Guide" icon="vial" href="/guides/testing-development">
+    Sandbox, simulators, and test scenarios
+  </Card>
+
+  <Card title="Payment Operations" icon="money-bill-transfer" href="/guides/payment-operations">
+    Creating, tracking, retrying, and reconciling payments
+  </Card>
+
+  <Card title="Webhooks" icon="bell" href="/guides/webhooks">
+    Real-time events, signatures, and replay protection
+  </Card>
+
+  <Card title="Error Handling" icon="triangle-exclamation" href="/guides/error-handling">
+    Error codes, rate limiting, and reliability patterns
+  </Card>
+
+  <Card title="Support Resources" icon="life-ring" href="/guides/support-resources">
+    FAQ, glossary, examples, and community
+  </Card>
+</CardGroup>
+
+---
+
+## Sandbox Environment
+
+Test everything before going live with our full-featured sandbox.
+
+<Note>
+The sandbox environment mirrors production with accelerated processing times and comprehensive test scenarios.
+</Note>
+
+**Sandbox Features:**
+- ✅ Full API access with all endpoints
+- ✅ ACH return code simulator (test all R-codes)
+- ✅ Accelerated microdeposit and prenote processing
+- ✅ Test bank accounts for various scenarios
+- ✅ Webhook testing and debugging tools
+- ✅ No real money, no risk
+
+[Explore Sandbox →](/guides/testing-development)
+
+---
+
+## Ready to Build?
+
+<CardGroup cols={2}>
+  <Card
+    title="Start Building"
+    icon="code"
+    href="/guides/getting-started"
+  >
+    Follow our quick start guide and process your first payment
+  </Card>
+
+  <Card
+    title="View API Reference"
+    icon="book"
+    href="/api-reference/introduction"
+  >
+    Explore all endpoints with interactive examples
+  </Card>
+
+  <Card
+    title="Get API Keys"
+    icon="key"
+    href="https://dashboard.streamline.example.com"
+  >
+    Sign up and get instant access to sandbox credentials
+  </Card>
+
+  <Card
+    title="Contact Sales"
+    icon="comments"
+    href="mailto:sales@istreamfinancial.com"
+  >
+    Talk to our team about your integration needs
+  </Card>
+</CardGroup>
+
+---
+
+## Join the Streamline Community
+
+Get help, share knowledge, and stay updated.
+
+<CardGroup cols={3}>
+  <Card title="Developer Community" icon="users" href="https://community.streamline.example.com">
+    Connect with other developers
+  </Card>
+
+  <Card title="Status Page" icon="signal" href="https://status.streamline.example.com">
+    Monitor API uptime and incidents
+  </Card>
+
+  <Card title="Support" icon="headset" href="mailto:support@istreamfinancial.com">
+    Get help from our team
+  </Card>
+</CardGroup>
+
+---
+
+<Note>
+**Powered by iStream Financial** - A trusted leader in payment processing infrastructure with decades of expertise in ACH, RTP, and modern payment rails.
+</Note>
