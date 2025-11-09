@@ -1,6 +1,69 @@
 ---
-title: "Welcome"
-description: "Start here to learn how to integrate with the the Streamline API"
+title: Welcome
+description: Streamline is an ultra-modern payments API by iStream Financial—built for ISVs, gateways, and partners who need powerful rails, clear observability, and a painless integration experience.
 ---
 
-# Streamline - powered by iStream
+# Streamline by iStream Financial
+
+Streamline is an ultra-modern payments API designed to make integrations with ISVs, gateways, and other partners as easy as possible—while providing world-class features and deep visibility across the entire payments lifecycle.
+
+## Why Streamline
+
+- **built for partners** — first-class patterns for ISVs, gateways, and embedded finance
+- **powerful rails** — ach (same-day, next-day), rtp, and flexible rail selection strategies
+- **end-to-end observability** — clear states, webhooks, idempotency, and auditability
+- **smart operations** — automatic rail selection, smart retries, and instant availability evaluation
+- **enterprise-grade** — oauth2, scoped api keys, encryption at rest, pci-aware practices
+
+## What you can build
+
+- payouts and collections at scale
+- recurring billing with clear reconciliation and settlement reporting
+- pass-through or aggregated gateway flows
+- white-label partner experiences with custom domains and branding
+
+## Quick start
+
+Get up and running in minutes.
+
+1. **read the overview** → [/getting-started/overview-introduction](/getting-started/overview-introduction)  
+2. **run the 5-minute quick start** → [/getting-started/quick-start-guide](/getting-started/quick-start-guide)  
+3. **set up auth** → [/getting-started/authentication-setup](/getting-started/authentication-setup)  
+4. **use the sandbox** → [/getting-started/sandbox-environment](/getting-started/sandbox-environment)  
+5. **import postman or openapi** → [/getting-started/postman-and-openapi](/getting-started/postman-and-openapi)
+
+## Core concepts you’ll use
+
+- **payment rails** → [/core-concepts/payment-rails-explained](/core-concepts/payment-rails-explained)  
+- **lifecycle & states** → [/core-concepts/payment-lifecycle](/core-concepts/payment-lifecycle)  
+- **settlement instructions** → [/core-concepts/settlement-instructions](/core-concepts/settlement-instructions)  
+- **instant availability** → [/core-concepts/instant-availability](/core-concepts/instant-availability)  
+- **automatic rail selection** → [/core-concepts/automatic-rail-selection](/core-concepts/automatic-rail-selection)  
+- **account validation methods** → [/core-concepts/account-validation-methods](/core-concepts/account-validation-methods)  
+- **idempotency** → [/core-concepts/idempotency](/core-concepts/idempotency)
+
+## A tiny taste
+
+Authenticate with client credentials and make your first request. Replace placeholders to match your environment.
+
+```bash
+# 1) get an access token
+curl -s -X POST "$API_BASE/oauth2/token" \
+  -u "$CLIENT_ID:$CLIENT_SECRET" \
+  -d "grant_type=client_credentials" \
+  -d "scope=payments:write payments:read" \
+  | jq .
+
+# 2) create a payment (example shape)
+curl -s -X POST "$API_BASE/payments" \
+  -H "authorization: Bearer $ACCESS_TOKEN" \
+  -H "content-type: application/json" \
+  -H "idempotency-key: $UNIQUE_KEY" \
+  -d '{
+    "amount": "125.00",
+    "currency": "USD",
+    "payment_method": "auto",
+    "source_account_id": "acct_src_123",
+    "destination_account_id": "acct_dest_456",
+    "metadata": { "order_id": "ORD-10001" }
+  }' | jq .
