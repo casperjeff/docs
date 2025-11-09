@@ -2,12 +2,12 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "palm",
   "name": "Payments Platform Docs",
-  "logo": { "light": "/static/logo.svg", "dark": "/static/logo.svg" },
+  "logo": { "light": "/static/logo-iStream-dark.svg", "dark": "/static/logo-iStream-white.svg" },
 
   "colors": {
     "primary": "#0ea5e9"
   },
-
+  
   "navigation": {
     "groups": [
         {
